@@ -8,7 +8,8 @@ global_keyboard = [
         ["4", "5", "6"],
         ["7", "8", "9"],
     ]
-blacklist = ["kolodezhv", "TolstovViktor"]
+whitelist = ["kolodezhv", "TolstovViktor"]
+
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -38,8 +39,8 @@ def calculate(update: Update, context: CallbackContext):
     for i in range(len(txt)):
         if txt[i] == "+" or txt[i] == "-" or txt[i] == "*" or txt[i] == "/":
             operation = txt[i]
-            num2 = int(txt[i + 1:len(txt)])
-            num1 = int(txt[0:i])
+            num2 = float(txt[i + 1:len(txt)])
+            num1 = float(txt[0:i])
     res = 0
     if operation == "+":
         res = num1 + num2
@@ -133,8 +134,8 @@ def v1_text(update: Update, context: CallbackContext):
 def main():
     updater = Updater(TOKEN)
     dispatcher = updater.dispatcher
-    command_list = ["start", "prepare_thyself", "keyboard"]
-    function_list = [start, v1_text, inline_keyboard]
+    command_list = ["start", "prepare_thyself", "keyboard", "set"]
+    function_list = [start, v1_text, inline_keyboard, set_timer]
     for i in range(len(command_list)):
         dispatcher.add_handler(CommandHandler(command_list[i], function_list[i]))
     echo_handler = MessageHandler(Filters.text & (~Filters.command), calculate)
@@ -144,9 +145,22 @@ def main():
     updater.idle()
 
 
+def set_timer(update: Update, context: CallbackContext):
+    context.bot_data["user_idi"] = update.effective_user.id
+    context.bot_data["xx"] = 0
+    context.bot_data["job"] = context.job_queue.run_repeating(show_seconds, 5)
+
+
+def show_seconds(context: CallbackContext):
+    if context.bot_data["xx"] >= 12:
+        context.bot_data["job"].schedule_removal()
+    context.bot.sendMessage(context.bot_data["user_idi"], ")" * 2 ** context.bot_data["xx"])
+    context.bot_data["xx"] += 1
+
+
 def vlad_protection(update: Update):
-    for i in blacklist:
-        if update.effective_user.username == i:
+    for i in whitelist:
+        if update.effective_user.username != i:
             update.message.reply_text("ХРЕН вам")
             logger.info(f"restricted user! {update.effective_user.username}")
             return True
