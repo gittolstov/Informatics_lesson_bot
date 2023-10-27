@@ -8,7 +8,7 @@ global_keyboard = [
         ["4", "5", "6"],
         ["7", "8", "9"],
     ]
-whitelist = ["kolodezhv", "TolstovViktor", "dim_akim"]
+whitelist = ["kolodezhv", "TolstovViktor", "dim_akim", "httzff"]
 database = ""
 
 
@@ -62,11 +62,13 @@ def start(update: Update, context: CallbackContext):
     global database
     if ident not in database:
         database.join(f"{ident}, ")
+    logger.info(update.effective_user.id)
+    logger.info("message sent")
 
 
 def help(update: Update, context: CallbackContext):
     update.message.reply_text("Поддерживаемые команды:\n<i>/start</i>\n<i>/help</i>\n<i>/keyboard</i> (вызывает клавиатуру в сообщении для запуска таймера)"
-                              "\n<i>/keyboard2</i> (вызывает клавиатуру в поле ввода для вычисления квадратов чисел от 0 до 10)\n<i>/clear</i> (выключает таймер)", parse_mode=ParseMode.HTML)
+                              "\n<i>/keyboard2</i> (вызывает клавиатуру в поле ввода для вычисления квадратов чисел от 0 до 9)\n<i>/clear</i> (выключает таймер)", parse_mode=ParseMode.HTML)
     logger.info("helped")
 
 
