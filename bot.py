@@ -8,7 +8,8 @@ global_keyboard = [
         ["4", "5", "6"],
         ["7", "8", "9"],
     ]
-whitelist = ["kolodezhv", "TolstovViktor"]
+whitelist = ["kolodezhv", "TolstovViktor", "dim_akim"]
+database = ""
 
 
 logging.basicConfig(
@@ -16,16 +17,10 @@ logging.basicConfig(
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
-database = ""
 
 base_url = "https://api.telegram.org/bot"
 end_url = "/getMe"
 url = f"{base_url}{TOKEN}{end_url}"
-
-
-def do_echo(update: Update, context: CallbackContext):
-    text = update.message.text
-    update.message.reply_text(f"Сам ты {text}")
 
 
 def calculate(update: Update, context: CallbackContext):
@@ -58,11 +53,21 @@ def start(update: Update, context: CallbackContext):
     if vlad_protection(update):
         return
     ident = update.message.from_user.username
-    update.message.reply_text(f"{ident}, твой айпи-адрес уже у меня. Скоро я тебя вычислю!")
+    update.message.reply_text(f"{ident}, здравствуйте, я бот [*insert bot name*]."
+                              f"\n Я обладаю широким спектром бесполезных или частично бесполезных функций."
+                              f"\nНапишите /help для получения списка возможностей."
+                              f"\nОсновной функцией является вычисление арифметических выражений формата <a><операция><б>"
+                              f"\nПоддерживаются операции деления (/), умножения, (*), вычитания (-) и сложения (+).")
     logger.info(f"Acquired username of {ident}")
     global database
     if ident not in database:
         database.join(f"{ident}, ")
+
+
+def help(update: Update, context: CallbackContext):
+    update.message.reply_text("Поддерживаемые команды:\n<i>/start</i>\n<i>/help</i>\n<i>/keyboard</i> (вызывает клавиатуру в сообщении для запуска таймера)"
+                              "\n<i>/keyboard2</i> (вызывает клавиатуру в поле ввода для вычисления квадратов чисел от 0 до 10)\n<i>/clear</i> (выключает таймер)", parse_mode=ParseMode.HTML)
+    logger.info("helped")
 
 
 def inline_keyboard(update: Update, context: CallbackContext):
@@ -78,9 +83,7 @@ def inline_keyboard(update: Update, context: CallbackContext):
             buttons[a][b] = InlineKeyboardButton(text=buttons[a][b], callback_data=f"{buttons[a][b]}_{a}_{b}")
     keyboard = InlineKeyboardMarkup(buttons)
     logger.info("Inline keyboard created")
-    update.message.reply_text("Choose wisely"
-                              "<b>\nsemi-bald</b>"
-                              "<i>\nabobe</i>", reply_markup=keyboard, parse_mode=ParseMode.HTML)
+    update.message.reply_text("Установите таймер", reply_markup=keyboard)
 
 
 def inline_keyboard_button_handler(update: Update, context: CallbackContext):
@@ -100,6 +103,7 @@ def inline_keyboard_button_handler(update: Update, context: CallbackContext):
     data = query.data.split("_")
     for i in range(len(data)):
         data[i] = int(data[i])
+    set_timer(update, context, data[0])
     logger.info(global_keyboard[data[1]][data[2]])
     logger.info(int(global_keyboard[data[1]][data[2]]) + 1)
     global_keyboard[data[1]][data[2]] = str(int(global_keyboard[data[1]][data[2]]) + 1)
@@ -115,12 +119,12 @@ def inline_keyboard_button_handler(update: Update, context: CallbackContext):
 
 def keyboard_handler(update: Update, context: CallbackContext):
     buttons = [
-        ["один", "два", "три"],
-        ["четыре", "пять", "шесть"],
-        ["семь", "восемь", "одиннадцать"],
+        ["1 * 1", "2 * 2", "3 * 3"],
+        ["4 * 4", "5 * 5", "6 * 6"],
+        ["7 * 7", "8 * 8", "9 * 9"],
     ]
     keyboard = ReplyKeyboardMarkup(buttons, resize_keyboard=True)
-    update.message.reply_text("Choose wisely", reply_markup=keyboard)
+    update.message.reply_text("Вычислите квадрат числа", reply_markup=keyboard)
     logger.info("Keyboard created")
 
 
@@ -131,11 +135,42 @@ def v1_text(update: Update, context: CallbackContext):
     logger.info(f"JUDGEMENT")
 
 
+def set_timer(update: Update, context: CallbackContext, time):
+    clear(update, context)
+    logger.info(f"timer set for {time} seconds")
+    context.bot.sendMessage(update.effective_user.id, f"Запущен таймер с периодом {time} секунд.\nНажмите /clear чтобы остановить.")
+    context.bot_data["user_idi"] = update.effective_user.id
+    context.bot_data["xx"] = 0
+    context.bot_data["x"] = time
+    context.bot_data["job"] = context.job_queue.run_repeating(show_seconds, time)
+
+
+def show_seconds(context: CallbackContext):
+    context.bot.sendMessage(context.bot_data["user_idi"], context.bot_data["xx"])
+    context.bot_data["xx"] += context.bot_data["x"]
+
+
+def clear(update: Update, context: CallbackContext):
+    for job in context.job_queue.jobs():
+        job.schedule_removal()
+    logger.info("timers cleared")
+    context.bot.sendMessage(update.effective_user.id, "Все таймеры очищены")
+
+
+def vlad_protection(update: Update):
+    for i in whitelist:
+        if update.effective_user.username == i:
+            return False
+    update.message.reply_text("ХРЕН вам")
+    logger.info(f"restricted user! {update.effective_user.username}")
+    return True
+
+
 def main():
     updater = Updater(TOKEN)
     dispatcher = updater.dispatcher
-    command_list = ["start", "prepare_thyself", "keyboard", "set"]
-    function_list = [start, v1_text, inline_keyboard, set_timer]
+    command_list = ["start", "prepare_thyself", "keyboard", "keyboard2", "help", "clear"]
+    function_list = [start, v1_text, inline_keyboard, keyboard_handler, help, clear]
     for i in range(len(command_list)):
         dispatcher.add_handler(CommandHandler(command_list[i], function_list[i]))
     echo_handler = MessageHandler(Filters.text & (~Filters.command), calculate)
@@ -144,26 +179,5 @@ def main():
     updater.start_polling()
     updater.idle()
 
-
-def set_timer(update: Update, context: CallbackContext):
-    context.bot_data["user_idi"] = update.effective_user.id
-    context.bot_data["xx"] = 0
-    context.bot_data["job"] = context.job_queue.run_repeating(show_seconds, 5)
-
-
-def show_seconds(context: CallbackContext):
-    if context.bot_data["xx"] >= 12:
-        context.bot_data["job"].schedule_removal()
-    context.bot.sendMessage(context.bot_data["user_idi"], ")" * 2 ** context.bot_data["xx"])
-    context.bot_data["xx"] += 1
-
-
-def vlad_protection(update: Update):
-    for i in whitelist:
-        if update.effective_user.username != i:
-            update.message.reply_text("ХРЕН вам")
-            logger.info(f"restricted user! {update.effective_user.username}")
-            return True
-    return False
 
 main()
