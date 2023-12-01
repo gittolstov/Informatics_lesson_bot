@@ -2,7 +2,7 @@ from telegram import Update
 from telegram.ext import CallbackContext, Updater, MessageHandler, CommandHandler, ConversationHandler, Filters
 import logging
 from Token import TOKEN
-from db import write_to_bd
+from db import *
 state = 0
 subject = {"name": "", "surname": "", "birthdate": 0}
 logging.basicConfig(
@@ -12,7 +12,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-WAIT_NAME, WAIT_SURNAME, WAIT_BIRTHDAY = range(3)
+WAIT_NAME, WAIT_SURNAME, WAIT_BIRTHDAY, WAIT_YES_NO = range(4)
 
 
 def ask_name(update: Update, context: CallbackContext):
@@ -60,8 +60,12 @@ def get_bd(update: Update, context: CallbackContext):
     global subject
     bd = update.message.text
     context.user_data["birthdate"] = bd
-    #update.message.reply_text(f'{context.user_data["name"]} {context.user_data["surname"]} {context.user_data["birthdate"]}')
-    write_to_bd([context.user_data["name"], context.user_data["surname"], context.user_data["birthdate"]])
+    if not isInDbById(update.effective_user.id):
+        write_to_bd([str(update.effective_user.id), context.user_data["name"], context.user_data["surname"], context.user_data["birthdate"]])
+        update.message.reply_text(f'{context.user_data["name"]} {context.user_data["surname"]} с датой рождения {context.user_data["birthdate"]}, вы зарегистрированы в базе данных.')
+    else:
+        update.message.reply_text(f'Ваши данные были перезаписаны, {find_by_id(update.effective_user.id)} заменено на {context.user_data["name"]} {context.user_data["surname"]} с датой рождения {context.user_data["birthdate"]}')
+        redact_by_id(update.effective_user.id, [str(update.effective_user.id), context.user_data["name"], context.user_data["surname"], context.user_data["birthdate"]])
     return ConversationHandler.END
 
 
