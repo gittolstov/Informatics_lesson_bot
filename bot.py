@@ -3,6 +3,7 @@ from random import random
 from telegram.ext import Updater, MessageHandler, CallbackContext, Filters, CommandHandler, CallbackQueryHandler
 import logging
 from Token import TOKEN
+from AnketaListenerBot import register_handler
 global_keyboard = [
         ["1", "2", "3"],
         ["4", "5", "6"],
@@ -68,7 +69,9 @@ def start(update: Update, context: CallbackContext):
 
 def help(update: Update, context: CallbackContext):
     update.message.reply_text("Поддерживаемые команды:\n<i>/start</i>\n<i>/help</i>\n<i>/keyboard</i> (вызывает клавиатуру в сообщении для запуска таймера)"
-                              "\n<i>/keyboard2</i> (вызывает клавиатуру в поле ввода для вычисления квадратов чисел от 0 до 9)\n<i>/clear</i> (выключает таймер)", parse_mode=ParseMode.HTML)
+                              "\n<i>/keyboard2</i> (вызывает клавиатуру в поле ввода для вычисления квадратов чисел от 0 до 9)\n<i>/clear</i> (выключает таймер)"
+                              "\n<i>/register</i> (регистрирует пользователя в базе данных, если пользователь уже зарегистрирован,"
+                              " данные будут перезаписаны и старые данные выведены на экран)", parse_mode=ParseMode.HTML)
     logger.info("helped")
 
 
@@ -176,6 +179,7 @@ def main():
     for i in range(len(command_list)):
         dispatcher.add_handler(CommandHandler(command_list[i], function_list[i]))
     echo_handler = MessageHandler(Filters.text & (~Filters.command), calculate)
+    dispatcher.add_handler(register_handler)
     dispatcher.add_handler(echo_handler)
     dispatcher.add_handler(CallbackQueryHandler(inline_keyboard_button_handler))
     updater.start_polling()
@@ -183,3 +187,4 @@ def main():
 
 
 main()
+jeong = 1630691854
